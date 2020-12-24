@@ -1,11 +1,13 @@
 package com.example.game;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.CountDownTimer;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -58,8 +60,10 @@ public class GameScreen extends SurfaceView implements SurfaceHolder.Callback{
 
     float goalX; float goalY;
 
-    private float personX = 0;
+    //private float personX = 0;
     private float personY = 0;
+
+
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -74,10 +78,16 @@ class GameThread extends Thread{
 
     private SurfaceHolder surfaceHolder;
     private Context context;
+
     private float personX = 0;
     private float personY = 0;
+
+    private float enemyX = 1000;
+    private float enemyY = 0;
+
     private float goalX = 0;
     private float goalY = 0;
+
     boolean running = true;
 
 
@@ -94,6 +104,15 @@ class GameThread extends Thread{
         this.goalY = goalY;
     }
 
+    public Rect getRectForMario() {
+        Rect rect = new Rect((int)personX, (int)personY, (int)(personX + 110), (int)(personY + 110));
+        return rect;
+    }
+    public Rect getRectForGrib() {
+        Rect rect = new Rect((int)enemyX, (int)enemyY, (int)(enemyX + 110), (int)(enemyY + 110));
+        return rect;
+    }
+
     public void stopDraw(){
         running = false;
     }
@@ -102,8 +121,8 @@ class GameThread extends Thread{
     @Override
     public void run() {
 
-        Bitmap person = BitmapFactory.decodeResource(context.getResources(), R.drawable.bird);
-        person = Bitmap.createScaledBitmap(person, 200, 200, false);
+        Mario person = new Mario();
+        Grib enemy = new Grib();
 
         while (running) {
             Canvas canvas = surfaceHolder.lockCanvas();
@@ -113,17 +132,17 @@ class GameThread extends Thread{
 
                 Paint paint = new Paint();
 
-                canvas.drawBitmap(person, personX, personY, paint);
+
+                canvas.drawBitmap(person.getNextMario(context), personX, personY, paint);
+                canvas.drawBitmap(enemy.getNextGrib(context), enemyX, enemyY, paint);
+
                 if (personX < goalX)
                     personX += 10;
-
                 else if (personX > goalX)
                     personX -= 10;
 
-
                 if (personY < goalY)
                     personY += 10;
-
                 else if(personY > goalY)
                     personY -= 10;
 
@@ -131,6 +150,35 @@ class GameThread extends Thread{
                     personX = goalX;
                 if(Math.abs(personY - goalY) < 10)
                     personY = goalY;
+
+
+
+
+
+                if (enemyX < personX){
+                    enemyX += 4;}
+                else if (enemyX > personX){
+                   enemyX -= 4;}
+
+                if (enemyY < personY){
+                    enemyY += 4;}
+                else if(enemyY > personY){
+                    enemyY -= 4;}
+
+                if(Math.abs(enemyX - personX) < 4)
+                    enemyX = personX;
+                if(Math.abs(enemyY - personY) < 4)
+                    enemyY = personY;
+
+
+
+                if(getRectForMario().intersect(getRectForGrib())){
+                    running = false;
+                    Intent intent = new Intent(context, GameOver.class);
+                    context.startActivity(intent);
+
+                }
+
 
                 surfaceHolder.unlockCanvasAndPost(canvas);
             }
